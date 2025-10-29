@@ -46,10 +46,14 @@ def extract_video_id(url_or_id: str) -> Optional[str]:
             return query_params.get('v', [None])[0]
         elif parsed_url.path.startswith('/embed/'):
             # Format: https://www.youtube.com/embed/VIDEO_ID
-            return parsed_url.path.split('/')[2]
+            path_parts = parsed_url.path.split('/')
+            if len(path_parts) >= 3:
+                return path_parts[2]
         elif parsed_url.path.startswith('/v/'):
             # Format: https://www.youtube.com/v/VIDEO_ID
-            return parsed_url.path.split('/')[2]
+            path_parts = parsed_url.path.split('/')
+            if len(path_parts) >= 3:
+                return path_parts[2]
     elif parsed_url.hostname in ['youtu.be']:
         # Format: https://youtu.be/VIDEO_ID
         return parsed_url.path[1:]
@@ -95,7 +99,7 @@ def get_channel_id_from_video(url_or_id: str, api_key: Optional[str] = None) -> 
         'key': api_key
     }
     
-    response = requests.get(api_url, params=params)
+    response = requests.get(api_url, params=params, timeout=10)
     response.raise_for_status()
     
     data = response.json()
@@ -131,7 +135,10 @@ def get_channel_id_from_video_no_api(url_or_id: str) -> Optional[str]:
     
     # Fetch the video page
     video_url = f"https://www.youtube.com/watch?v={video_id}"
-    response = requests.get(video_url)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    response = requests.get(video_url, headers=headers, timeout=10)
     response.raise_for_status()
     
     # Search for channel ID in the page
